@@ -299,10 +299,15 @@ class _RendezvousState:
 
 def _remove_participant_epilogue(state: _RendezvousState, settings: RendezvousSettings) -> None:
     if state.complete:
+        if state.participants:
+            # If rendezvous was already complete we need to start a new round if a participant leaves
+            # This is triggered by adding a participant to the wait_list. The agent will restart workers in this case.
+            if not state.wait_list:
+                state.wait_list.add(next(iter(state.participants.keys())))
         # If we do not have any participants left, move to the next round.
-        if not state.participants:
+        # This only works while we still in ExitOp/JoinOp, not once workers have started
+        else:
             state.complete = False
-
             state.round += 1
     else:
         if len(state.participants) < settings.min_nodes:
